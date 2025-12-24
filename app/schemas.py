@@ -1,4 +1,3 @@
-# app/schemas.py (Updated StoreCreate, added OrderCreate, OrderOut)
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 from datetime import datetime
@@ -16,6 +15,10 @@ class UserUpdate(BaseModel):
     email: Optional[str] = None
     phone_number: Optional[str] = None
     language: Optional[int] = None
+    
+class LoginRequest(BaseModel):
+    username: str
+    password: str
     
 class Token(BaseModel):
     access_token: str

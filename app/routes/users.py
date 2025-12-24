@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select, Session
 from app.db import get_session
 from app.models import User
-from app.schemas import UserCreate, Token, UserUpdate
+from app.schemas import UserCreate, Token, UserUpdate, LoginRequest
 from app.auth import (
     verify_password,
     get_password_hash,
@@ -11,9 +11,11 @@ from app.auth import (
     get_admin_user,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
-from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from fastapi import Body
+from fastapi.security import OAuth2PasswordBearer
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -35,14 +37,19 @@ def register(user_create: UserCreate, session: Session = Depends(get_session)):
     session.refresh(user)
     return {"id": user.id, "username": user.username, "language": user.language}
 
+
+
 @router.post("/token", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
-    user = session.exec(select(User).where(User.username == form_data.username)).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
+def login(data: LoginRequest, session: Session = Depends(get_session)):
+    user = session.exec(select(User).where(User.username == data.username)).first()
+    if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect username or password")
+    
     expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     token = create_access_token(data={"sub": user.username}, expires_delta=expires)
+    
     return {"access_token": token, "token_type": "bearer", "user_id": user.id}
+
 
 @router.get("/me")
 def me(current_user: User = Depends(get_current_user)):
