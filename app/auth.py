@@ -9,9 +9,6 @@ from sqlmodel import select, Session
 from app.db import get_session, UPLOAD_DIR
 from app.models import User
 
-# -------------------------
-# Load environment variables
-# -------------------------
 load_dotenv()
 
 SECRET_KEY = os.environ.get(
@@ -24,9 +21,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# -------------------------
-# Password hashing
-# -------------------------
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -37,10 +31,6 @@ def get_password_hash(password: str) -> str:
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
-
-# -------------------------
-# JWT helpers
-# -------------------------
 def create_access_token(
     data: dict,
     expires_delta: timedelta | None = None
@@ -53,15 +43,9 @@ def create_access_token(
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-# -------------------------
-# Security scheme for Swagger
-# -------------------------
 bearer_scheme = HTTPBearer(auto_error=True)
 
 
-# -------------------------
-# Auth dependencies
-# -------------------------
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     session: Session = Depends(get_session)

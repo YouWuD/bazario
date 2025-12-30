@@ -6,21 +6,39 @@ from fastapi import FastAPI
 
 load_dotenv()
 
-# Database setup
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./bazario.db")
-engine = create_engine(DATABASE_URL, echo=False)
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Upload directory for images
-UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "./uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)  # Ensure folder exists
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not set")
+
+# Detect SQLite vs PostgreSQL
+connect_args = {}
+engine_kwargs = {"echo": False, "pool_pre_ping": True}
+
+if DATABASE_URL.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+    engine_kwargs.pop("pool_pre_ping")
+
+engine = create_engine(
+    DATABASE_URL,
+    connect_args=connect_args,
+    **engine_kwargs,
+)
+
+# Upload directory (⚠️ still ephemeral on Render)
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # FastAPI app (used for mounting static files)
 app = FastAPI(title="Bazario API")
 
-# Serve uploads folder as static files so Flutter can access them
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-# Database session generator
+# Create tables (CRITICAL)
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+# Dependency
 def get_session():
     with Session(engine) as session:
         yield session

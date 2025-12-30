@@ -7,6 +7,7 @@ from app.routes import users, stores, products, orders, coins, cart, location
 import app.services.notifications as notifications
 import os
 from fastapi.staticfiles import StaticFiles
+from app.db import create_db_and_tables
 
 
 
@@ -27,8 +28,8 @@ app.include_router(notifications.router)
 
 @app.on_event("startup")
 async def on_startup():
-    SQLModel.metadata.create_all(engine)
-    os.makedirs(UPLOAD_DIR, exist_ok=True)  # Ensure upload dir exists
+    create_db_and_tables()
+    os.makedirs(UPLOAD_DIR, exist_ok=True)  
     with next(get_session()) as session:
         admin = session.exec(select(User).where(User.username == "meadminBoss")).first()
         if not admin:
