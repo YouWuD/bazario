@@ -11,7 +11,6 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not set")
 
-# Detect SQLite vs PostgreSQL
 connect_args = {}
 engine_kwargs = {"echo": False, "pool_pre_ping": True}
 
@@ -25,7 +24,6 @@ engine = create_engine(
     **engine_kwargs,
 )
 
-# Upload directory (⚠️ still ephemeral on Render)
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -34,11 +32,9 @@ app = FastAPI(title="Bazario API")
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-# Create tables (CRITICAL)
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
-# Dependency
 def get_session():
     with Session(engine) as session:
         yield session
